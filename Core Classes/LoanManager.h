@@ -98,18 +98,24 @@ public:
     // Transaction history
     std::vector<LoanTransaction*> getUserTransactions(int userId) const;
     std::vector<LoanTransaction*> getBookTransactions(int bookId) const;
-    std::vector<LoanTransaction*> getOverdueTransactions() const;
     
-    // Statistics and reporting
+    // Display and reporting methods
+    void printUserLoans(int userId) const;
+    void printUserReservations(int userId) const;
+    void printAllLoans() const;
+    void printAllReservations() const;
+    void printOverdueBooks() const;
+    
+    // Statistics methods
     int getTotalLoans() const;
     int getActiveLoans() const;
     int getOverdueCount() const;
     double getTotalFines() const;
+    std::vector<LoanTransaction*> getOverdueTransactions() const;
     
     // Utility methods
     void setFineCalculator(std::unique_ptr<FineCalculator> calculator);
     void printTransactionHistory(int userId) const;
-    void printOverdueBooks() const;
 };
 
 #endif // LOAN_MANAGER_H 
