@@ -3,8 +3,8 @@
 #include <algorithm>
 
 // User Base Class Implementation
-User::User(int userId, const std::string& username, const std::string& passwordHash, UserRole role)
-    : userId(userId), username(username), passwordHash(passwordHash), role(role), status(UserStatus::Active), totalFines(0.0) {}
+User::User(int userId, const std::string& username, const std::string& password, UserRole role)
+    : userId(userId), username(username), password(password), role(role), status(UserStatus::Active), totalFines(0.0) {}
 
 int User::getUserId() const { return userId; }
 std::string User::getUsername() const { return username; }
@@ -20,12 +20,12 @@ void User::payFine(double amount) { totalFines = std::max(0.0, totalFines - amou
 
 bool User::authenticate(const std::string& password) const {
     // For demonstration, just compare the password directly (insecure, replace with hash in production)
-    return password == passwordHash;
+    return password == this->password;
 }
 
 // RegularUser Implementation
-RegularUser::RegularUser(int userId, const std::string& username, const std::string& passwordHash)
-    : User(userId, username, passwordHash, UserRole::Regular) {}
+RegularUser::RegularUser(int userId, const std::string& username, const std::string& password)
+    : User(userId, username, password, UserRole::Regular) {}
 
 bool RegularUser::canBorrow() const { return status == UserStatus::Active && totalFines < 50.0; }
 int RegularUser::getBorrowLimit() const { return 5; }
@@ -38,8 +38,8 @@ bool RegularUser::canViewLogs() const { return false; }
 std::string RegularUser::getType() const { return "RegularUser"; }
 
 // Librarian Implementation
-Librarian::Librarian(int userId, const std::string& username, const std::string& passwordHash)
-    : User(userId, username, passwordHash, UserRole::Librarian) {}
+Librarian::Librarian(int userId, const std::string& username, const std::string& password)
+    : User(userId, username, password, UserRole::Librarian) {}
 
 bool Librarian::canBorrow() const { return true; }
 int Librarian::getBorrowLimit() const { return 100; } // Arbitrary high limit
@@ -49,4 +49,4 @@ bool Librarian::canManageUsers() const { return true; }
 bool Librarian::canManageBooks() const { return true; }
 bool Librarian::canHandleFines() const { return true; }
 bool Librarian::canViewLogs() const { return true; }
-std::string Librarian::getType() const { return "Librarian"; } 
+std::string Librarian::getType() const { return "Librarian"; }

@@ -33,14 +33,14 @@ class User {
 protected:
     int userId;
     std::string username;
-    std::string passwordHash;
+    std::string password;
     UserRole role;
     UserStatus status;
     std::vector<LoanRecord> loanHistory;
     double totalFines;
 
 public:
-    User(int userId, const std::string& username, const std::string& passwordHash, UserRole role);
+    User(int userId, const std::string& username, const std::string& password, UserRole role);
     virtual ~User() = default;
 
     int getUserId() const;
@@ -74,7 +74,7 @@ public:
 // RegularUser class
 class RegularUser : public User {
 public:
-    RegularUser(int userId, const std::string& username, const std::string& passwordHash);
+    RegularUser(int userId, const std::string& username, const std::string& password);
     bool canBorrow() const override;
     int getBorrowLimit() const override;
     int getLoanPeriod() const override;
@@ -89,7 +89,7 @@ public:
 // Librarian class
 class Librarian : public User {
 public:
-    Librarian(int userId, const std::string& username, const std::string& passwordHash);
+    Librarian(int userId, const std::string& username, const std::string& password);
     bool canBorrow() const override;
     int getBorrowLimit() const override;
     int getLoanPeriod() const override;
@@ -101,4 +101,4 @@ public:
     std::string getType() const override;
 };
 
-#endif // USER_H 
+#endif // USER_H

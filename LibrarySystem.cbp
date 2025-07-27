@@ -32,6 +32,10 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="Core Classes/Book.cpp" />
+		<Unit filename="Core Classes/Book.h" />
+		<Unit filename="Core Classes/User.cpp" />
+		<Unit filename="Core Classes/User.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />

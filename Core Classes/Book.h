@@ -104,4 +104,4 @@ public:
     string getType() const override;
 };
 
-#endif // BOOK_H 
+#endif // BOOK_H
