@@ -1,270 +1,679 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <limits>
+#include <iomanip>
+#include <algorithm>
 #include "Core Classes/Book.h"
 #include "Core Classes/User.h"
 #include "Core Classes/LoanManager.h"
 
-void printSeparator(const std::string& title) {
-    std::cout << "\n" << std::string(50, '=') << std::endl;
-    std::cout << " " << title << std::endl;
-    std::cout << std::string(50, '=') << std::endl;
-}
+class LibrarySystem {
+private:
+    std::vector<std::unique_ptr<Book>> books;
+    std::vector<std::unique_ptr<User>> users;
+    std::unique_ptr<LoanManager> loanManager;
+    User* currentUser;
 
-void testBookCreation() {
-    printSeparator("TESTING BOOK CREATION");
-    
-    // Create different types of books
-    auto textbook1 = std::make_unique<TextBook>(1, "Advanced C++ Programming", "John Doe", 
-                                               "Programming", "2023-01-15", 450, "Graduate", "Computer Science");
-    
-    auto magazine1 = std::make_unique<Magazine>(2, "Tech Weekly", "Tech Publications", 
-                                               "Technology", "2024-03-01", 50, 15);
-    
-    auto reference1 = std::make_unique<ReferenceBook>(3, "Library Management Handbook", "Jane Smith", 
-                                                     "Reference", "2022-06-10", 300);
-    
-    auto textbook2 = std::make_unique<TextBook>(4, "Data Structures", "Alice Johnson", 
-                                               "Computer Science", "2023-08-20", 380, "Undergraduate", "Computer Science");
-    
-    // Print book information
-    std::cout << "Created books:" << std::endl;
-    textbook1->printInfo();
-    magazine1->printInfo();
-    reference1->printInfo();
-    textbook2->printInfo();
-    
-    // Test book status changes
-    std::cout << "\nTesting book status changes:" << std::endl;
-    std::cout << "Original status: ";
-    textbook1->printInfo();
-    
-    textbook1->setStatus(BookStatus::Borrowed);
-    std::cout << "After borrowing: ";
-    textbook1->printInfo();
-    
-    textbook1->setStatus(BookStatus::Available);
-    std::cout << "After returning: ";
-    textbook1->printInfo();
-}
+    // Helper functions
+    void clearScreen() {
+        #ifdef _WIN32
+            system("cls");
+        #else
+            system("clear");
+        #endif
+    }
 
-void testUserCreation() {
-    printSeparator("TESTING USER CREATION");
-    
-    // Create users
-    auto regularUser1 = std::make_unique<RegularUser>(1, "john_doe", "password123");
-    auto regularUser2 = std::make_unique<RegularUser>(2, "jane_smith", "password456");
-    auto librarian1 = std::make_unique<Librarian>(3, "admin_lib", "admin123");
-    
-    // Print user information
-    std::cout << "Created users:" << std::endl;
-    std::cout << "User 1: " << regularUser1->getUsername() << " (" << regularUser1->getType() << ")" << std::endl;
-    std::cout << "User 2: " << regularUser2->getUsername() << " (" << regularUser2->getType() << ")" << std::endl;
-    std::cout << "Librarian: " << librarian1->getUsername() << " (" << librarian1->getType() << ")" << std::endl;
-    
-    // Test permissions
-    std::cout << "\nTesting user permissions:" << std::endl;
-    std::cout << "Regular User 1 can borrow: " << (regularUser1->canBorrow() ? "Yes" : "No") << std::endl;
-    std::cout << "Regular User 1 borrow limit: " << regularUser1->getBorrowLimit() << std::endl;
-    std::cout << "Regular User 1 loan period: " << regularUser1->getLoanPeriod() << " days" << std::endl;
-    std::cout << "Regular User 1 can manage books: " << (regularUser1->canManageBooks() ? "Yes" : "No") << std::endl;
-    
-    std::cout << "Librarian can borrow: " << (librarian1->canBorrow() ? "Yes" : "No") << std::endl;
-    std::cout << "Librarian borrow limit: " << librarian1->getBorrowLimit() << std::endl;
-    std::cout << "Librarian can manage books: " << (librarian1->canManageBooks() ? "Yes" : "No") << std::endl;
-    std::cout << "Librarian can view logs: " << (librarian1->canViewLogs() ? "Yes" : "No") << std::endl;
-    
-    // Test authentication
-    std::cout << "\nTesting authentication:" << std::endl;
-    std::cout << "User 1 correct password: " << (regularUser1->authenticate("password123") ? "Success" : "Failed") << std::endl;
-    std::cout << "User 1 wrong password: " << (regularUser1->authenticate("wrongpass") ? "Success" : "Failed") << std::endl;
-}
+    void waitForKey() {
+        std::cout << "\nPress Enter to continue...";
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cin.get();
+    }
 
-void testBorrowingAndReturning() {
-    printSeparator("TESTING BORROWING AND RETURNING");
-    
-    // Create loan manager
-    auto loanManager = std::make_unique<LoanManager>();
-    
-    // Create books and users
-    auto textbook1 = std::make_unique<TextBook>(1, "Advanced C++ Programming", "John Doe", 
-                                               "Programming", "2023-01-15", 450, "Graduate", "Computer Science");
-    auto magazine1 = std::make_unique<Magazine>(2, "Tech Weekly", "Tech Publications", 
-                                               "Technology", "2024-03-01", 50, 15);
-    auto reference1 = std::make_unique<ReferenceBook>(3, "Library Management Handbook", "Jane Smith", 
-                                                     "Reference", "2022-06-10", 300);
-    
-    auto regularUser1 = std::make_unique<RegularUser>(1, "john_doe", "password123");
-    auto regularUser2 = std::make_unique<RegularUser>(2, "jane_smith", "password456");
-    
-    // Test borrowing
-    std::cout << "Testing book borrowing:" << std::endl;
-    loanManager->borrowBook(regularUser1.get(), textbook1.get());
-    loanManager->borrowBook(regularUser1.get(), magazine1.get());
-    
-    // Try to borrow reference book (should fail)
-    std::cout << "\nTrying to borrow reference book:" << std::endl;
-    loanManager->borrowBook(regularUser1.get(), reference1.get());
-    
-    // Try to borrow more than limit
-    auto textbook2 = std::make_unique<TextBook>(4, "Data Structures", "Alice Johnson", 
-                                               "Computer Science", "2023-08-20", 380, "Undergraduate", "Computer Science");
-    auto textbook3 = std::make_unique<TextBook>(5, "Algorithms", "Bob Wilson", 
-                                               "Computer Science", "2023-09-15", 400, "Undergraduate", "Computer Science");
-    auto textbook4 = std::make_unique<TextBook>(6, "Database Systems", "Carol Brown", 
-                                               "Computer Science", "2023-10-01", 350, "Undergraduate", "Computer Science");
-    auto textbook5 = std::make_unique<TextBook>(7, "Software Engineering", "David Lee", 
-                                               "Computer Science", "2023-11-01", 420, "Undergraduate", "Computer Science");
-    
-    std::cout << "\nTesting borrowing limits:" << std::endl;
-    loanManager->borrowBook(regularUser1.get(), textbook2.get());
-    loanManager->borrowBook(regularUser1.get(), textbook3.get());
-    loanManager->borrowBook(regularUser1.get(), textbook4.get());
-    loanManager->borrowBook(regularUser1.get(), textbook5.get()); // Should fail (limit reached)
-    
-    // Test returning
-    std::cout << "\nTesting book returning:" << std::endl;
-    loanManager->returnBook(regularUser1.get(), textbook1.get());
-    loanManager->returnBook(regularUser1.get(), magazine1.get());
-    
-    // Show transaction history
-    loanManager->printTransactionHistory(1);
-}
+    void displayHeader(const std::string& title) {
+        clearScreen();
+        std::cout << "\n" << std::string(50, '=') << std::endl;
+        std::cout << std::setw(25 + title.length()/2) << title << std::endl;
+        std::cout << std::string(50, '=') << std::endl;
+    }
 
-void testReservations() {
-    printSeparator("TESTING RESERVATION SYSTEM");
-    
-    auto loanManager = std::make_unique<LoanManager>();
-    
-    // Create books and users
-    auto textbook1 = std::make_unique<TextBook>(1, "Advanced C++ Programming", "John Doe", 
-                                               "Programming", "2023-01-15", 450, "Graduate", "Computer Science");
-    auto regularUser1 = std::make_unique<RegularUser>(1, "john_doe", "password123");
-    auto regularUser2 = std::make_unique<RegularUser>(2, "jane_smith", "password456");
-    auto regularUser3 = std::make_unique<RegularUser>(3, "bob_wilson", "password789");
-    
-    // Borrow the book first
-    loanManager->borrowBook(regularUser1.get(), textbook1.get());
-    
-    // Test reservations
-    std::cout << "Testing book reservations:" << std::endl;
-    loanManager->reserveBook(regularUser2.get(), textbook1.get());
-    loanManager->reserveBook(regularUser3.get(), textbook1.get());
-    
-    // Try to reserve again (should fail)
-    std::cout << "\nTrying to reserve the same book again:" << std::endl;
-    loanManager->reserveBook(regularUser2.get(), textbook1.get());
-    
-    // Try to reserve available book (should fail)
-    auto textbook2 = std::make_unique<TextBook>(2, "Data Structures", "Alice Johnson", 
-                                               "Computer Science", "2023-08-20", 380, "Undergraduate", "Computer Science");
-    std::cout << "\nTrying to reserve available book:" << std::endl;
-    loanManager->reserveBook(regularUser2.get(), textbook2.get());
-    
-    // Cancel reservation
-    std::cout << "\nCancelling reservation:" << std::endl;
-    loanManager->cancelReservation(regularUser2.get(), textbook1.get());
-    
-    // Return book and see reservation queue
-    std::cout << "\nReturning book to test reservation queue:" << std::endl;
-    loanManager->returnBook(regularUser1.get(), textbook1.get());
-}
+    // Menu functions
+    void showMainMenu() {
+        while (true) {
+            displayHeader("Library Management System");
+            std::cout << "\n1. Login"
+                     << "\n2. Register New User"
+                     << "\n3. Exit"
+                     << "\n\nChoice: ";
 
-void testFineCalculation() {
-    printSeparator("TESTING FINE CALCULATION");
-    
-    auto loanManager = std::make_unique<LoanManager>();
-    
-    // Create book and user
-    auto textbook1 = std::make_unique<TextBook>(1, "Advanced C++ Programming", "John Doe", 
-                                               "Programming", "2023-01-15", 450, "Graduate", "Computer Science");
-    auto regularUser1 = std::make_unique<RegularUser>(1, "john_doe", "password123");
-    
-    // Borrow book
-    loanManager->borrowBook(regularUser1.get(), textbook1.get());
-    
-    // Show current fines
-    std::cout << "Current user fines: $" << regularUser1->getTotalFines() << std::endl;
-    
-    // Return book (should be on time)
-    std::cout << "\nReturning book on time:" << std::endl;
-    loanManager->returnBook(regularUser1.get(), textbook1.get());
-    
-    std::cout << "Fines after on-time return: $" << regularUser1->getTotalFines() << std::endl;
-    
-    // Test fine payment
-    std::cout << "\nTesting fine payment:" << std::endl;
-    regularUser1->addFine(25.0); // Add some fines manually for testing
-    std::cout << "Fines after adding: $" << regularUser1->getTotalFines() << std::endl;
-    
-    loanManager->payFine(regularUser1.get(), 10.0);
-    std::cout << "Fines after partial payment: $" << regularUser1->getTotalFines() << std::endl;
-    
-    loanManager->payFine(regularUser1.get(), 20.0); // Pay more than owed
-    std::cout << "Fines after full payment: $" << regularUser1->getTotalFines() << std::endl;
-}
+            int choice;
+            std::cin >> choice;
+            std::cin.ignore();
 
-void testStatistics() {
-    printSeparator("TESTING STATISTICS AND REPORTING");
-    
-    auto loanManager = std::make_unique<LoanManager>();
-    
-    // Create multiple books and users
-    auto textbook1 = std::make_unique<TextBook>(1, "Advanced C++ Programming", "John Doe", 
-                                               "Programming", "2023-01-15", 450, "Graduate", "Computer Science");
-    auto textbook2 = std::make_unique<TextBook>(2, "Data Structures", "Alice Johnson", 
-                                               "Computer Science", "2023-08-20", 380, "Undergraduate", "Computer Science");
-    auto magazine1 = std::make_unique<Magazine>(3, "Tech Weekly", "Tech Publications", 
-                                               "Technology", "2024-03-01", 50, 15);
-    
-    auto regularUser1 = std::make_unique<RegularUser>(1, "john_doe", "password123");
-    auto regularUser2 = std::make_unique<RegularUser>(2, "jane_smith", "password456");
-    
-    // Create some loan activity
-    loanManager->borrowBook(regularUser1.get(), textbook1.get());
-    loanManager->borrowBook(regularUser2.get(), textbook2.get());
-    loanManager->borrowBook(regularUser1.get(), magazine1.get());
-    
-    // Return some books
-    loanManager->returnBook(regularUser1.get(), textbook1.get());
-    loanManager->returnBook(regularUser2.get(), textbook2.get());
-    
-    // Print statistics
-    std::cout << "Library Statistics:" << std::endl;
-    std::cout << "Total loans: " << loanManager->getTotalLoans() << std::endl;
-    std::cout << "Active loans: " << loanManager->getActiveLoans() << std::endl;
-    std::cout << "Overdue books: " << loanManager->getOverdueCount() << std::endl;
-    std::cout << "Total fines: $" << loanManager->getTotalFines() << std::endl;
-    
-    // Print overdue books
-    loanManager->printOverdueBooks();
-    
-    // Print transaction history for users
-    loanManager->printTransactionHistory(1);
-    loanManager->printTransactionHistory(2);
-}
+            switch (choice) {
+                case 1: handleLogin(); break;
+                case 2: handleRegistration(); break;
+                case 3: return;
+                default: std::cout << "Invalid choice. Please try again.\n";
+            }
+        }
+    }
+
+    void showUserMenu() {
+        while (true) {
+            displayHeader("User Menu - Welcome " + currentUser->getUsername());
+            std::cout << "\n1. Search Books"
+                     << "\n2. View Available Books"
+                     << "\n3. Borrow Book"
+                     << "\n4. Return Book"
+                     << "\n5. Reserve Book"
+                     << "\n6. View My Loans"
+                     << "\n7. View My Reservations"
+                     << "\n8. View My Fines"
+                     << "\n9. Logout"
+                     << "\n\nChoice: ";
+
+            int choice;
+            std::cin >> choice;
+            std::cin.ignore();
+
+            switch (choice) {
+                case 1: searchBooks(); break;
+                case 2: viewAvailableBooks(); break;
+                case 3: borrowBook(); break;
+                case 4: returnBook(); break;
+                case 5: reserveBook(); break;
+                case 6: viewMyLoans(); break;
+                case 7: viewMyReservations(); break;
+                case 8: viewMyFines(); break;
+                case 9: return;
+                default: std::cout << "Invalid choice. Please try again.\n";
+            }
+            waitForKey();
+        }
+    }
+
+    void showLibrarianMenu() {
+        while (true) {
+            displayHeader("Librarian Menu - Welcome " + currentUser->getUsername());
+            std::cout << "\n1. Add New Book"
+                     << "\n2. Edit Book"
+                     << "\n3. Remove Book"
+                     << "\n4. View All Books"
+                     << "\n5. Manage Users"
+                     << "\n6. View All Loans"
+                     << "\n7. View All Reservations"
+                     << "\n8. Manage Fines"
+                     << "\n9. Generate Reports"
+                     << "\n10. System Settings"
+                     << "\n11. Logout"
+                     << "\n\nChoice: ";
+
+            int choice;
+            std::cin >> choice;
+            std::cin.ignore();
+
+            switch (choice) {
+                case 1: addBook(); break;
+                case 2: editBook(); break;
+                case 3: removeBook(); break;
+                case 4: viewAllBooks(); break;
+                case 5: manageUsers(); break;
+                case 6: viewAllLoans(); break;
+                case 7: viewAllReservations(); break;
+                case 8: manageFines(); break;
+                case 9: generateReports(); break;
+                case 10: systemSettings(); break;
+                case 11: return;
+                default: std::cout << "Invalid choice. Please try again.\n";
+            }
+            waitForKey();
+        }
+    }
+
+    // Authentication functions
+    void handleLogin() {
+        std::string username, password;
+        displayHeader("Login");
+        
+        std::cout << "\nUsername: ";
+        std::getline(std::cin, username);
+        std::cout << "Password: ";
+        std::getline(std::cin, password);
+
+        for (const auto& user : users) {
+            if (user->getUsername() == username && user->authenticate(password)) {
+                currentUser = user.get();
+                if (dynamic_cast<Librarian*>(currentUser)) {
+                    showLibrarianMenu();
+                } else {
+                    showUserMenu();
+                }
+                currentUser = nullptr;
+                return;
+            }
+        }
+        std::cout << "\nInvalid username or password.\n";
+        waitForKey();
+    }
+
+    void handleRegistration() {
+        std::string username, password;
+        displayHeader("New User Registration");
+        
+        std::cout << "\nUsername: ";
+        std::getline(std::cin, username);
+        
+        // Check if username already exists
+        for (const auto& user : users) {
+            if (user->getUsername() == username) {
+                std::cout << "\nUsername already exists. Please choose another.\n";
+                waitForKey();
+                return;
+            }
+        }
+        
+        std::cout << "Password: ";
+        std::getline(std::cin, password);
+
+        int newId = users.size() + 1;
+        users.push_back(std::make_unique<RegularUser>(newId, username, password));
+        std::cout << "\nUser registered successfully!\n";
+        waitForKey();
+    }
+
+    // Book management functions
+    void addBook() {
+        displayHeader("Add New Book");
+        std::cout << "\nSelect book type:"
+                 << "\n1. TextBook"
+                 << "\n2. Magazine"
+                 << "\n3. Reference Book"
+                 << "\n\nChoice: ";
+
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
+
+        // Common book properties
+        std::string title, author, category, publicationDate;
+        int pageCount;
+
+        std::cout << "\nEnter book details:\n";
+        std::cout << "Title: ";
+        std::getline(std::cin, title);
+        std::cout << "Author: ";
+        std::getline(std::cin, author);
+        std::cout << "Category: ";
+        std::getline(std::cin, category);
+        std::cout << "Publication Date (YYYY-MM-DD): ";
+        std::getline(std::cin, publicationDate);
+        std::cout << "Page Count: ";
+        std::cin >> pageCount;
+        std::cin.ignore();
+
+        int id = books.size() + 1; // Simple ID generation
+
+        switch (choice) {
+            case 1: {
+                std::string academicLevel, field;
+                std::cout << "Academic Level: ";
+                std::getline(std::cin, academicLevel);
+                std::cout << "Field: ";
+                std::getline(std::cin, field);
+                books.push_back(std::make_unique<TextBook>(id, title, author, category, 
+                    publicationDate, pageCount, academicLevel, field));
+                break;
+            }
+            case 2: {
+                int issueNumber;
+                std::cout << "Issue Number: ";
+                std::cin >> issueNumber;
+                books.push_back(std::make_unique<Magazine>(id, title, author, category, 
+                    publicationDate, pageCount, issueNumber));
+                break;
+            }
+            case 3: {
+                books.push_back(std::make_unique<ReferenceBook>(id, title, author, category, 
+                    publicationDate, pageCount));
+                break;
+            }
+            default:
+                std::cout << "Invalid book type selected.\n";
+                return;
+        }
+
+        std::cout << "\nBook added successfully!\n";
+    }
+
+    void viewAllBooks() {
+        displayHeader("All Books");
+        if (books.empty()) {
+            std::cout << "\nNo books in the library.\n";
+            return;
+        }
+
+        for (const auto& book : books) {
+            book->printInfo();
+            std::cout << std::string(50, '-') << std::endl;
+        }
+    }
+
+    void viewAvailableBooks() {
+        displayHeader("Available Books");
+        bool found = false;
+        
+        for (const auto& book : books) {
+            if (book->getStatus() == BookStatus::Available) {
+                book->printInfo();
+                std::cout << std::string(50, '-') << std::endl;
+                found = true;
+            }
+        }
+
+        if (!found) {
+            std::cout << "\nNo available books found.\n";
+        }
+    }
+
+    void searchBooks() {
+        displayHeader("Search Books");
+        std::cout << "\n1. Search by Title"
+                 << "\n2. Search by Author"
+                 << "\n3. Search by Category"
+                 << "\n\nChoice: ";
+
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
+
+        std::string searchTerm;
+        std::cout << "Enter search term: ";
+        std::getline(std::cin, searchTerm);
+
+        bool found = false;
+        for (const auto& book : books) {
+            bool match = false;
+            switch (choice) {
+                case 1: match = (book->getTitle().find(searchTerm) != std::string::npos); break;
+                case 2: match = (book->getAuthor().find(searchTerm) != std::string::npos); break;
+                case 3: match = (book->getCategory().find(searchTerm) != std::string::npos); break;
+            }
+            if (match) {
+                book->printInfo();
+                std::cout << std::string(50, '-') << std::endl;
+                found = true;
+            }
+        }
+
+        if (!found) {
+            std::cout << "\nNo matching books found.\n";
+        }
+    }
+
+    void editBook() {
+        displayHeader("Edit Book");
+        viewAllBooks();
+        
+        int id;
+        std::cout << "\nEnter book ID to edit (0 to cancel): ";
+        std::cin >> id;
+        std::cin.ignore();
+
+        if (id == 0) return;
+
+        auto it = std::find_if(books.begin(), books.end(),
+            [id](const auto& book) { return book->getId() == id; });
+
+        if (it == books.end()) {
+            std::cout << "Book not found.\n";
+            return;
+        }
+
+        std::cout << "\nCurrent book details:\n";
+        (*it)->printInfo();
+
+        std::cout << "\nWhat would you like to edit?"
+                 << "\n1. Title"
+                 << "\n2. Author"
+                 << "\n3. Category"
+                 << "\n4. Publication Date"
+                 << "\n5. Page Count"
+                 << "\n6. Status"
+                 << "\n0. Cancel"
+                 << "\n\nChoice: ";
+
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
+
+        std::string newValue;
+        switch (choice) {
+            case 1:
+                std::cout << "New title: ";
+                std::getline(std::cin, newValue);
+                (*it)->setTitle(newValue);
+                break;
+            case 2:
+                std::cout << "New author: ";
+                std::getline(std::cin, newValue);
+                (*it)->setAuthor(newValue);
+                break;
+            case 3:
+                std::cout << "New category: ";
+                std::getline(std::cin, newValue);
+                (*it)->setCategory(newValue);
+                break;
+            case 4:
+                std::cout << "New publication date (YYYY-MM-DD): ";
+                std::getline(std::cin, newValue);
+                (*it)->setPublicationDate(newValue);
+                break;
+            case 5:
+                int newPages;
+                std::cout << "New page count: ";
+                std::cin >> newPages;
+                (*it)->setPageCount(newPages);
+                break;
+            case 6:
+                std::cout << "New status:"
+                         << "\n1. Available"
+                         << "\n2. Borrowed"
+                         << "\n3. Reserved"
+                         << "\n4. Lost"
+                         << "\nChoice: ";
+                int statusChoice;
+                std::cin >> statusChoice;
+                switch (statusChoice) {
+                    case 1: (*it)->setStatus(BookStatus::Available); break;
+                    case 2: (*it)->setStatus(BookStatus::Borrowed); break;
+                    case 3: (*it)->setStatus(BookStatus::Reserved); break;
+                    case 4: (*it)->setStatus(BookStatus::Lost); break;
+                    default: std::cout << "Invalid status choice.\n"; return;
+                }
+                break;
+            case 0:
+                return;
+            default:
+                std::cout << "Invalid choice.\n";
+                return;
+        }
+
+        std::cout << "\nBook updated successfully!\n";
+    }
+
+    void removeBook() {
+        displayHeader("Remove Book");
+        viewAllBooks();
+        
+        int id;
+        std::cout << "\nEnter book ID to remove (0 to cancel): ";
+        std::cin >> id;
+        std::cin.ignore();
+
+        if (id == 0) return;
+
+        auto it = std::find_if(books.begin(), books.end(),
+            [id](const auto& book) { return book->getId() == id; });
+
+        if (it == books.end()) {
+            std::cout << "Book not found.\n";
+            return;
+        }
+
+        books.erase(it);
+        std::cout << "\nBook removed successfully!\n";
+    }
+
+    void borrowBook() {
+        displayHeader("Borrow Book");
+        viewAvailableBooks();
+
+        int id;
+        std::cout << "\nEnter book ID to borrow (0 to cancel): ";
+        std::cin >> id;
+        std::cin.ignore();
+
+        if (id == 0) return;
+
+        auto it = std::find_if(books.begin(), books.end(),
+            [id](const auto& book) { return book->getId() == id; });
+
+        if (it == books.end()) {
+            std::cout << "Book not found.\n";
+            return;
+        }
+
+        if (loanManager->borrowBook(currentUser, it->get())) {
+            std::cout << "\nBook borrowed successfully!\n";
+        } else {
+            std::cout << "\nCould not borrow book. Please check your borrowing limits or book availability.\n";
+        }
+    }
+
+    void returnBook() {
+        displayHeader("Return Book");
+        
+        // Show user's borrowed books
+        bool found = false;
+        for (const auto& book : books) {
+            if (book->getStatus() == BookStatus::Borrowed) {
+                book->printInfo();
+                std::cout << std::string(50, '-') << std::endl;
+                found = true;
+            }
+        }
+
+        if (!found) {
+            std::cout << "\nYou have no books to return.\n";
+            return;
+        }
+
+        int id;
+        std::cout << "\nEnter book ID to return (0 to cancel): ";
+        std::cin >> id;
+        std::cin.ignore();
+
+        if (id == 0) return;
+
+        auto it = std::find_if(books.begin(), books.end(),
+            [id](const auto& book) { return book->getId() == id; });
+
+        if (it == books.end()) {
+            std::cout << "Book not found.\n";
+            return;
+        }
+
+        if (loanManager->returnBook(currentUser, it->get())) {
+            std::cout << "\nBook returned successfully!\n";
+        } else {
+            std::cout << "\nCould not return book. Please check if you actually borrowed this book.\n";
+        }
+    }
+
+    void reserveBook() {
+        displayHeader("Reserve Book");
+        // Show books that can be reserved (currently borrowed)
+        bool found = false;
+        for (const auto& book : books) {
+            if (book->getStatus() == BookStatus::Borrowed) {
+                book->printInfo();
+                std::cout << std::string(50, '-') << std::endl;
+                found = true;
+            }
+        }
+
+        if (!found) {
+            std::cout << "\nNo books available for reservation.\n";
+            return;
+        }
+
+        int id;
+        std::cout << "\nEnter book ID to reserve (0 to cancel): ";
+        std::cin >> id;
+        std::cin.ignore();
+
+        if (id == 0) return;
+
+        auto it = std::find_if(books.begin(), books.end(),
+            [id](const auto& book) { return book->getId() == id; });
+
+        if (it == books.end()) {
+            std::cout << "Book not found.\n";
+            return;
+        }
+
+        if (loanManager->reserveBook(currentUser, it->get())) {
+            std::cout << "\nBook reserved successfully!\n";
+        } else {
+            std::cout << "\nCould not reserve book. The book might not be available for reservation.\n";
+        }
+    }
+
+    void viewMyLoans() {
+        displayHeader("My Loans");
+        loanManager->printUserLoans(currentUser->getUserId());
+    }
+
+    void viewMyReservations() {
+        displayHeader("My Reservations");
+        loanManager->printUserReservations(currentUser->getUserId());
+    }
+
+    void viewMyFines() {
+        displayHeader("My Fines");
+        std::cout << "Your current fines: $" << currentUser->getTotalFines() << std::endl;
+    }
+
+    void manageUsers() {
+        displayHeader("Manage Users");
+        for (const auto& user : users) {
+            std::cout << "ID: " << user->getUserId()
+                     << ", Username: " << user->getUsername()
+                     << ", Type: " << user->getType() << std::endl;
+        }
+    }
+
+    void viewAllLoans() {
+        displayHeader("All Loans");
+        loanManager->printAllLoans();
+    }
+
+    void viewAllReservations() {
+        displayHeader("All Reservations");
+        loanManager->printAllReservations();
+    }
+
+    void manageFines() {
+        displayHeader("Manage Fines");
+        manageUsers();
+        
+        int userId;
+        std::cout << "\nEnter user ID to manage fines (0 to cancel): ";
+        std::cin >> userId;
+        std::cin.ignore();
+
+        if (userId == 0) return;
+
+        auto it = std::find_if(users.begin(), users.end(),
+            [userId](const auto& user) { return user->getUserId() == userId; });
+
+        if (it == users.end()) {
+            std::cout << "User not found.\n";
+            return;
+        }
+
+        std::cout << "Current fines: $" << (*it)->getTotalFines() << std::endl;
+        
+        double amount;
+        std::cout << "Enter amount to waive (0 to cancel): $";
+        std::cin >> amount;
+
+        if (amount <= 0) return;
+
+        if (loanManager->payFine(it->get(), amount)) {
+            std::cout << "\nFines waived successfully!\n";
+        } else {
+            std::cout << "\nError waiving fines.\n";
+        }
+    }
+
+    void generateReports() {
+        displayHeader("Generate Reports");
+        
+        std::cout << "\nLibrary Statistics:"
+                 << "\n-------------------"
+                 << "\nTotal books: " << books.size()
+                 << "\nTotal users: " << users.size()
+                 << "\nTotal loans: " << loanManager->getTotalLoans()
+                 << "\nActive loans: " << loanManager->getActiveLoans()
+                 << "\nOverdue books: " << loanManager->getOverdueCount()
+                 << "\nTotal fines: $" << loanManager->getTotalFines()
+                 << std::endl;
+
+        std::cout << "\nOverdue Books:\n";
+        loanManager->printOverdueBooks();
+
+        std::cout << "\nMost Popular Books:\n";
+        // TODO: Implement most popular books report
+    }
+
+    void systemSettings() {
+        displayHeader("System Settings");
+        std::cout << "\n1. Fine Rate Settings"
+                 << "\n2. Loan Period Settings"
+                 << "\n3. Reservation Settings"
+                 << "\n4. Backup Settings"
+                 << "\n5. Return to Main Menu"
+                 << "\n\nChoice: ";
+
+        int choice;
+        std::cin >> choice;
+        std::cin.ignore();
+
+        switch (choice) {
+            case 1:
+                // TODO: Implement fine rate settings
+                std::cout << "Feature not yet implemented.\n";
+                break;
+            case 2:
+                // TODO: Implement loan period settings
+                std::cout << "Feature not yet implemented.\n";
+                break;
+            case 3:
+                // TODO: Implement reservation settings
+                std::cout << "Feature not yet implemented.\n";
+                break;
+            case 4:
+                // TODO: Implement backup settings
+                std::cout << "Feature not yet implemented.\n";
+                break;
+            case 5:
+                return;
+            default:
+                std::cout << "Invalid choice.\n";
+                break;
+        }
+    }
+
+public:
+    LibrarySystem() : loanManager(std::make_unique<LoanManager>()), currentUser(nullptr) {
+        // Add a default librarian account
+        users.push_back(std::make_unique<Librarian>(1, "admin", "admin123"));
+    }
+
+    void run() {
+        showMainMenu();
+    }
+};
 
 int main() {
-    std::cout << "LIBRARY MANAGEMENT SYSTEM - COMPREHENSIVE TEST" << std::endl;
-    std::cout << "=============================================" << std::endl;
-    
     try {
-        // Test all major components
-        testBookCreation();
-        testUserCreation();
-        testBorrowingAndReturning();
-        testReservations();
-        testFineCalculation();
-        testStatistics();
-        
-        std::cout << "\n" << std::string(50, '=') << std::endl;
-        std::cout << " ALL TESTS COMPLETED SUCCESSFULLY!" << std::endl;
-        std::cout << std::string(50, '=') << std::endl;
-        
+        LibrarySystem library;
+        library.run();
     } catch (const std::exception& e) {
-        std::cerr << "Error during testing: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
-    
     return 0;
 }
