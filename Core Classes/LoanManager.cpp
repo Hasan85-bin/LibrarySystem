@@ -14,7 +14,8 @@ LoanTransaction::LoanTransaction(int transId, int uId, int bId, const std::strin
 // Reservation constructor implementation
 Reservation::Reservation(int uId, int bId, const std::string& date, const std::string& expiry)
     : userId(uId), bookId(bId), reservationDate(date), expiryDate(expiry) {}
-
+Reservation::Reservation(int uId, int bId, const std::string& date)
+    : userId(uId), bookId(bId), reservationDate(date) {}
 // StandardFineCalculator implementation
 double StandardFineCalculator::calculateFine(const std::string& dueDate, const std::string& returnDate) {
     // Simple date comparison - in production, use proper date parsing
@@ -55,7 +56,7 @@ bool LoanManager::borrowBook(User* user, Book* book) {
         user->getUserId(),
         book->getId(),
         getCurrentDate(),
-        calculateDueDate(regular_user_loan_period) // 14 days loan period
+        calculateDueDateAndExpiryDate(regular_user_loan_period) // configuration loan period
     );
 
     transactions.push_back(std::move(transaction));
@@ -98,6 +99,7 @@ bool LoanManager::returnBook(User* user, Book* book) {
     if (queue.empty()) {
         auto& reservation = queue.front();
         std::cout << "Book is now available for user " << reservation.userId << " (next in reservation queue)" << std::endl;
+        reservation.expiryDate = calculateDueDateAndExpiryDate(reservation_period) ; // Update reservation date
     }
 
     return true;
@@ -136,8 +138,7 @@ bool LoanManager::reserveBook(User* user, Book* book) {
     bookReservations.push(Reservation(
         user->getUserId(),
         book->getId(),
-        getCurrentDate(),
-        calculateDueDate(reservation_period) // configuration reservation period
+        getCurrentDate() // configuration reservation period
     ));
 
     return true;
@@ -301,9 +302,9 @@ std::string LoanManager::getCurrentDate() const {
     return ss.str();
 }
 
-std::string LoanManager::calculateDueDate(int loanPeriod) const {
+std::string LoanManager::calculateDueDateAndExpiryDate(int period) const {
     auto now = std::chrono::system_clock::now();
-    auto due = now + std::chrono::hours(24 * loanPeriod);
+    auto due = now + std::chrono::hours(24 * period); // period in days
     auto time_t = std::chrono::system_clock::to_time_t(due);
     std::stringstream ss;
     ss << std::put_time(std::localtime(&time_t), "%Y-%m-%d");

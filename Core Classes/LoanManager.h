@@ -35,6 +35,8 @@ struct Reservation {
     std::string expiryDate;
     
     Reservation(int uId, int bId, const std::string& date, const std::string& expiry);
+    Reservation(int uId, int bId, const std::string& date);
+
 };
 
 // Fine calculation strategy (Strategy Pattern)
@@ -72,7 +74,7 @@ private:
     
     // Helper methods
     std::string getCurrentDate() const;
-    std::string calculateDueDate(int loanPeriod) const;
+    std::string calculateDueDateAndExpiryDate(int period) const;
     bool isDateOverdue(const std::string& dueDate) const;
     bool canUserBorrowBook(const User* user, const Book* book) const;
     int getCurrentLoansCount(const User* user) const;
