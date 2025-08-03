@@ -41,8 +41,11 @@ struct Reservation {
 // Fine calculation strategy (Strategy Pattern)
 class FineCalculator {
 public:
+
     virtual ~FineCalculator() = default;
     virtual double calculateFine(const std::string& dueDate, const std::string& returnDate) = 0;
+    //helper
+    time_t parseDate(const std::string& dateStr) const;
 };
 
 class StandardFineCalculator : public FineCalculator {
@@ -74,7 +77,6 @@ private:
     std::string getCurrentDate() const;
     std::string calculateDueDate(int loanPeriod) const;
     bool isDateOverdue(const std::string& dueDate) const;
-    int daysBetween(const std::string& date1, const std::string& date2) const;
     bool canUserBorrowBook(const User* user, const Book* book) const;
     int getCurrentLoansCount(const User* user) const;
     

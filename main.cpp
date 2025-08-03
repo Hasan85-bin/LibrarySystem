@@ -26,7 +26,8 @@ private:
 
     void waitForKey() {
         std::cout << "\nPress Enter to continue...";
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        //causing two enters need for backing to menu
+        // std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::cin.get();
     }
 

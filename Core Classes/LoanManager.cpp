@@ -18,10 +18,25 @@ Reservation::Reservation(int uId, int bId, const std::string& date, const std::s
 double StandardFineCalculator::calculateFine(const std::string& dueDate, const std::string& returnDate) {
     // Simple date comparison - in production, use proper date parsing
     if (returnDate <= dueDate) return 0.0;
-    
+
+    auto dueDateTime = parseDate(dueDate);
+    auto returnDateTime = parseDate(returnDate);
+
     // Calculate days overdue (simplified)
-    int daysOverdue = 1; // Simplified calculation
+    int daysOverdue = (dueDateTime-returnDateTime)/60/60/24; // Simplified calculation
     return daysOverdue * dailyRate;
+}
+
+time_t FineCalculator::parseDate(const std::string& dateStr) const{
+    std::tm tm = {};
+    std::istringstream ss(dateStr);
+    ss >> std::get_time(&tm, "%Y-%m-%d");
+    if (ss.fail()) {
+        throw std::runtime_error("Failed to parse date");
+    }
+    // mktime expects tm_isdst to be set, -1 means mktime will attempt to determine whether DST is in effect
+    tm.tm_isdst = -1;
+    return std::mktime(&tm);
 }
 
 LoanManager::LoanManager() : nextTransactionId(1) {
@@ -75,6 +90,13 @@ bool LoanManager::returnBook(User* user, Book* book) {
     }
 
     book->setStatus(BookStatus::Available);
+
+    // Check if there are reservations for this book
+    if (!reservations[book->getId()].empty()) {
+        auto& reservation = reservations[book->getId()].front();
+        std::cout << "Book is now available for user " << reservation.userId << " (next in reservation queue)" << std::endl;
+    }
+
     return true;
 }
 
@@ -174,23 +196,26 @@ void LoanManager::printUserLoans(int userId) const {
 }
 
 void LoanManager::printUserReservations(int userId) const {
-    std::cout << "\n=== Current Reservations ===" << std::endl;
-    bool found = false;
-    
-    for (const auto& [bookId, queue] : reservations) {
-        auto it = std::find_if(queue.front(), queue.back(),
-            [userId](const Reservation& res) { return res.userId == userId && res.isActive; });
-            
-        if (it != queue.end()) {
-            std::cout << "Book ID: " << bookId
-                     << ", Reserved on: " << it->reservationDate
-                     << ", Expires: " << it->expiryDate << std::endl;
-            found = true;
+    auto it = reservations.find(userId);
+    if (it != reservations.end()) {
+        std::queue<Reservation> queue = it->second; // Make a copy to iterate
+        
+        if (!queue.empty()) {
+            std::cout << "\nReservations for User ID " << userId << ":\n";
+            while (!queue.empty()) {
+                const Reservation& res = queue.front();
+                if (res.isActive) {
+                    std::cout << "Book ID: " << res.bookId
+                             << ", Reserved on: " << res.reservationDate
+                             << ", Expires: " << res.expiryDate << std::endl;
+                }
+                queue.pop();
+            }
+        } else {
+            std::cout << "\nNo active reservations found.\n";
         }
-    }
-    
-    if (!found) {
-        std::cout << "No current reservations." << std::endl;
+    } else {
+        std::cout << "\nNo reservations found for this user.\n";
     }
 }
 
@@ -282,10 +307,7 @@ std::string LoanManager::calculateDueDate(int loanPeriod) const {
     return ss.str();
 }
 
-int LoanManager::daysBetween(const std::string& date1, const std::string& date2) const {
-    // Simplified implementation - in production use a proper date library
-    return date2 > date1 ? 1 : 0;
-}
+
 
 bool LoanManager::canUserBorrowBook(const User* user, const Book* book) const {
     if (!user || !book) return false;

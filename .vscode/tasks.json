@@ -10,6 +10,7 @@
                 "${workspaceFolder}\\main.cpp",
                 "${workspaceFolder}\\Core Classes\\Book.cpp",
                 "${workspaceFolder}\\Core Classes\\User.cpp",
+                "${workspaceFolder}\\Core Classes\\LoanManager.cpp",
                 "-o",
                 "${workspaceFolder}\\bin\\Debug\\LibrarySystem.exe"
             ],
