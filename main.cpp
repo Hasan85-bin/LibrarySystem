@@ -7,6 +7,8 @@
 #include "Core Classes/Book.h"
 #include "Core Classes/User.h"
 #include "Core Classes/LoanManager.h"
+#include "Utils/ini/GlobalConfiguration.h"
+#include "Utils/ini/ConfigManager.h"
 
 class LibrarySystem {
 private:
@@ -625,7 +627,8 @@ private:
                  << "\n2. Loan Period Settings"
                  << "\n3. Reservation Settings"
                  << "\n4. Backup Settings"
-                 << "\n5. Return to Main Menu"
+                 << "\n5. Librarian Settings"
+                 << "\n6. Return to Main Menu"
                  << "\n\nChoice: ";
 
         int choice;
@@ -633,23 +636,84 @@ private:
         std::cin.ignore();
 
         switch (choice) {
-            case 1:
-                // TODO: Implement fine rate settings
-                std::cout << "Feature not yet implemented.\n";
+            case 1: {
+                std::cout << "Current fine rate per day: $" << daily_fine_rate << std::endl;
+                std::cout << "Enter new fine rate per day: $";
+                double newRate;
+                std::cin >> newRate;
+                std::cin.ignore();
+                if (newRate > 0) {
+                    daily_fine_rate = newRate;
+                    ConfigManager::saveConfig();
+                    std::cout << "Fine rate updated successfully.\n";
+                } else {
+                    std::cout << "Invalid value. No changes made.\n";
+                }
                 break;
-            case 2:
-                // TODO: Implement loan period settings
-                std::cout << "Feature not yet implemented.\n";
+            }
+            case 2: {
+                std::cout << "Current loan period (days): " << regular_user_loan_period << std::endl;
+                std::cout << "Enter new loan period (days): ";
+                int newPeriod;
+                std::cin >> newPeriod;
+                std::cin.ignore();
+                if (newPeriod > 0) {
+                    regular_user_loan_period = newPeriod;
+                    ConfigManager::saveConfig();
+                    std::cout << "Loan period updated successfully.\n";
+                } else {
+                    std::cout << "Invalid value. No changes made.\n";
+                }
                 break;
-            case 3:
-                // TODO: Implement reservation settings
-                std::cout << "Feature not yet implemented.\n";
+            }
+            case 3: {
+                std::cout << "Current max reservations per user: " << regular_user_borrow_limit << std::endl;
+                std::cout << "Enter new max reservations per user: ";
+                int newMax;
+                std::cin >> newMax;
+                std::cin.ignore();
+                if (newMax > 0) {
+                    regular_user_borrow_limit = newMax;
+                    ConfigManager::saveConfig();
+                    std::cout << "Reservation limit updated successfully.\n";
+                } else {
+                    std::cout << "Invalid value. No changes made.\n";
+                }
                 break;
+            }
             case 4:
                 // TODO: Implement backup settings
                 std::cout << "Feature not yet implemented.\n";
                 break;
-            case 5:
+            case 5: {
+                std::cout << "Current librarian borrow limit: " << librarian_borrow_limit << std::endl;
+                std::cout << "Enter new librarian borrow limit: ";
+                int newLimit;
+                std::cin >> newLimit;
+                std::cin.ignore();
+                if (newLimit > 0) {
+                    librarian_borrow_limit = newLimit;
+                    ConfigManager::saveConfig();
+                    std::cout << "Librarian borrow limit updated successfully.\n";
+                } else {
+                    std::cout << "Invalid value. No changes made.\n";
+                }
+
+                std::cout << "Current librarian loan period (days): " << librarian_loan_period << std::endl;
+                std::cout << "Enter new librarian loan period (days): ";
+                int newPeriod;
+                std::cin >> newPeriod;
+                std::cin.ignore();
+                if (newPeriod > 0) {
+                    librarian_loan_period = newPeriod;
+                    ConfigManager::saveConfig();
+                    std::cout << "Librarian loan period updated successfully.\n";
+                } else {
+                    std::cout << "Invalid value. No changes made.\n";
+                }
+                break;
+            }
+            case 6:
                 return;
             default:
                 std::cout << "Invalid choice.\n";

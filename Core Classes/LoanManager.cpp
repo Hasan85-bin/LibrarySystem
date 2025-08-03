@@ -4,6 +4,7 @@
 #include <sstream>
 #include <algorithm>
 #include <chrono>
+#include "../Utils/ini/GlobalConfiguration.h"
 
 // LoanTransaction constructor implementation
 LoanTransaction::LoanTransaction(int transId, int uId, int bId, const std::string& borrow, const std::string& due)
@@ -24,7 +25,7 @@ double StandardFineCalculator::calculateFine(const std::string& dueDate, const s
 
     // Calculate days overdue (simplified)
     int daysOverdue = (dueDateTime-returnDateTime)/60/60/24; // Simplified calculation
-    return daysOverdue * dailyRate;
+    return daysOverdue * daily_fine_rate; // Use global configuration for fine rate
 }
 
 time_t FineCalculator::parseDate(const std::string& dateStr) const{
@@ -54,7 +55,7 @@ bool LoanManager::borrowBook(User* user, Book* book) {
         user->getUserId(),
         book->getId(),
         getCurrentDate(),
-        calculateDueDate(14) // 14 days loan period
+        calculateDueDate(regular_user_loan_period) // 14 days loan period
     );
 
     transactions.push_back(std::move(transaction));
@@ -91,12 +92,11 @@ bool LoanManager::returnBook(User* user, Book* book) {
 
     book->setStatus(BookStatus::Available);
 
-    // Remove expired books
-    cleanupExpiredReservations();
-
     // Check if there are reservations for this book
-    if (!reservations[book->getId()].empty()) {
-        auto& reservation = reservations[book->getId()].front();
+    auto& queue = reservations[book->getId()];
+    cleanupExpiredReservations(queue);
+    if (queue.empty()) {
+        auto& reservation = queue.front();
         std::cout << "Book is now available for user " << reservation.userId << " (next in reservation queue)" << std::endl;
     }
 
@@ -113,11 +113,9 @@ bool LoanManager::reserveBook(User* user, Book* book) {
         return false;
     }
 
-    // Remove expired books
-    cleanupExpiredReservations();
-
     // Check if user already has a reservation for this book
     auto& bookReservations = reservations[book->getId()];
+    cleanupExpiredReservations(bookReservations);
     std::queue<Reservation> tempQueue = bookReservations;
     bool hasReservation = false;
     
@@ -139,7 +137,7 @@ bool LoanManager::reserveBook(User* user, Book* book) {
         user->getUserId(),
         book->getId(),
         getCurrentDate(),
-        calculateDueDate(7) // 7 days reservation period
+        calculateDueDate(reservation_period) // configuration reservation period
     ));
 
     return true;
@@ -203,11 +201,8 @@ void LoanManager::printUserLoans(int userId) const {
 
 void LoanManager::printUserReservations(int userId) {
 
-    // Remove expired books
-    cleanupExpiredReservations();
-
-
     auto it = reservations.find(userId);
+    cleanupExpiredReservations(it->second);
     if (it != reservations.end()) {
         std::queue<Reservation> queue = it->second; // Make a copy to iterate
         
@@ -251,12 +246,8 @@ void LoanManager::printAllLoans() const {
 void LoanManager::printAllReservations() {
     std::cout << "\n=== All Current Reservations ===" << std::endl;
     bool found = false;
-
-    // Remove expired books
-    cleanupExpiredReservations();
-
-    
-    for (const auto& [bookId, queue] : reservations) {
+    for (auto& [bookId, queue] : reservations) {
+        cleanupExpiredReservations(queue);
         if (!queue.empty()) {
             std::cout << "Book ID: " << bookId << " Reservations:" << std::endl;
             // If 'queue' is std::queue, copy to a std::vector for iteration
@@ -336,9 +327,8 @@ bool LoanManager::canUserBorrowBook(const User* user, const Book* book) const {
     return true;
 }
 
-void LoanManager::cleanupExpiredReservations() {
+void LoanManager::cleanupExpiredReservations(std::queue<Reservation>& queue) {
     std::string currentDate = getCurrentDate();
-    for (auto& [bookId, queue] : reservations) {
         std::queue<Reservation> activeQueue;
         while (!queue.empty()) {
             Reservation res = queue.front();
@@ -348,7 +338,6 @@ void LoanManager::cleanupExpiredReservations() {
             queue.pop();
         }
         queue = activeQueue;
-    }
 }
 
 int LoanManager::getCurrentLoansCount(const User* user) const {

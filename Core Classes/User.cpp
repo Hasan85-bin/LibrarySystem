@@ -1,6 +1,7 @@
 #include "User.h"
 #include <iostream>
 #include <algorithm>
+#include "../Utils/ini/GlobalConfiguration.h"
 
 // User Base Class Implementation
 User::User(int userId, const std::string& username, const std::string& password, UserRole role)
@@ -27,9 +28,9 @@ bool User::authenticate(const std::string& password) const {
 RegularUser::RegularUser(int userId, const std::string& username, const std::string& password)
     : User(userId, username, password, UserRole::Regular) {}
 
-bool RegularUser::canBorrow() const { return status == UserStatus::Active && totalFines < 50.0; }
-int RegularUser::getBorrowLimit() const { return 5; }
-int RegularUser::getLoanPeriod() const { return 14; } // days
+bool RegularUser::canBorrow() const { return status == UserStatus::Active && totalFines < max_fine; }
+int RegularUser::getBorrowLimit() const { return regular_user_borrow_limit; }
+int RegularUser::getLoanPeriod() const { return regular_user_loan_period; } // days
 bool RegularUser::canReserve() const { return status == UserStatus::Active; }
 bool RegularUser::canManageUsers() const { return false; }
 bool RegularUser::canManageBooks() const { return false; }
@@ -42,8 +43,8 @@ Librarian::Librarian(int userId, const std::string& username, const std::string&
     : User(userId, username, password, UserRole::Librarian) {}
 
 bool Librarian::canBorrow() const { return true; }
-int Librarian::getBorrowLimit() const { return 100; } // Arbitrary high limit
-int Librarian::getLoanPeriod() const { return 60; } // days
+int Librarian::getBorrowLimit() const { return librarian_borrow_limit; } // Arbitrary high limit
+int Librarian::getLoanPeriod() const { return librarian_loan_period; } // days
 bool Librarian::canReserve() const { return true; }
 bool Librarian::canManageUsers() const { return true; }
 bool Librarian::canManageBooks() const { return true; }

@@ -48,10 +48,8 @@ public:
 };
 
 class StandardFineCalculator : public FineCalculator {
-private:
-    double dailyRate;
 public:
-    StandardFineCalculator(double rate = 1.0) : dailyRate(rate) {}
+    StandardFineCalculator() {}
     double calculateFine(const std::string& dueDate, const std::string& returnDate) override;
 };
 
@@ -78,7 +76,7 @@ private:
     bool isDateOverdue(const std::string& dueDate) const;
     bool canUserBorrowBook(const User* user, const Book* book) const;
     int getCurrentLoansCount(const User* user) const;
-    void cleanupExpiredReservations() ;
+    void cleanupExpiredReservations(std::queue<Reservation>& queue);
     
 public:
     LoanManager();

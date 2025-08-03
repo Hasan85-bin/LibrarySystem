@@ -11,6 +11,11 @@
                 "${workspaceFolder}\\Core Classes\\Book.cpp",
                 "${workspaceFolder}\\Core Classes\\User.cpp",
                 "${workspaceFolder}\\Core Classes\\LoanManager.cpp",
+                "${workspaceFolder}\\Utils\\ini\\*.cpp",
+                "${workspaceFolder}\\Utils\\ini\\ini.c",
+                "${workspaceFolder}\\Utils\\ini\\iniReader\\INIReader.cpp",
+
+
                 "-o",
                 "${workspaceFolder}\\bin\\Debug\\LibrarySystem.exe"
             ],
