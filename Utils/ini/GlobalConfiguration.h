@@ -10,3 +10,5 @@ extern int reservation_period;
 //[Fines]
 extern double daily_fine_rate;
 extern double max_fine;
+
+bool loadGlobalConfigurationFromIni();

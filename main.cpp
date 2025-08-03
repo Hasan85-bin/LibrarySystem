@@ -728,6 +728,7 @@ public:
     }
 
     void run() {
+        loadGlobalConfigurationFromIni();
         showMainMenu();
     }
 };
