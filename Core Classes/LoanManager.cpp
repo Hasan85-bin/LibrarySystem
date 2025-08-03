@@ -12,7 +12,7 @@ LoanTransaction::LoanTransaction(int transId, int uId, int bId, const std::strin
 
 // Reservation constructor implementation
 Reservation::Reservation(int uId, int bId, const std::string& date, const std::string& expiry)
-    : userId(uId), bookId(bId), reservationDate(date), expiryDate(expiry), isActive(true) {}
+    : userId(uId), bookId(bId), reservationDate(date), expiryDate(expiry) {}
 
 // StandardFineCalculator implementation
 double StandardFineCalculator::calculateFine(const std::string& dueDate, const std::string& returnDate) {
@@ -91,6 +91,9 @@ bool LoanManager::returnBook(User* user, Book* book) {
 
     book->setStatus(BookStatus::Available);
 
+    // Remove expired books
+    cleanupExpiredReservations();
+
     // Check if there are reservations for this book
     if (!reservations[book->getId()].empty()) {
         auto& reservation = reservations[book->getId()].front();
@@ -110,6 +113,9 @@ bool LoanManager::reserveBook(User* user, Book* book) {
         return false;
     }
 
+    // Remove expired books
+    cleanupExpiredReservations();
+
     // Check if user already has a reservation for this book
     auto& bookReservations = reservations[book->getId()];
     std::queue<Reservation> tempQueue = bookReservations;
@@ -117,7 +123,7 @@ bool LoanManager::reserveBook(User* user, Book* book) {
     
     while (!tempQueue.empty()) {
         const Reservation& res = tempQueue.front();
-        if (res.userId == user->getUserId() && res.isActive) {
+        if (res.userId == user->getUserId()) {
             hasReservation = true;
             break;
         }
@@ -195,7 +201,12 @@ void LoanManager::printUserLoans(int userId) const {
     }
 }
 
-void LoanManager::printUserReservations(int userId) const {
+void LoanManager::printUserReservations(int userId) {
+
+    // Remove expired books
+    cleanupExpiredReservations();
+
+
     auto it = reservations.find(userId);
     if (it != reservations.end()) {
         std::queue<Reservation> queue = it->second; // Make a copy to iterate
@@ -204,11 +215,9 @@ void LoanManager::printUserReservations(int userId) const {
             std::cout << "\nReservations for User ID " << userId << ":\n";
             while (!queue.empty()) {
                 const Reservation& res = queue.front();
-                if (res.isActive) {
-                    std::cout << "Book ID: " << res.bookId
-                             << ", Reserved on: " << res.reservationDate
-                             << ", Expires: " << res.expiryDate << std::endl;
-                }
+                std::cout << "Book ID: " << res.bookId
+                            << ", Reserved on: " << res.reservationDate
+                            << ", Expires: " << res.expiryDate << std::endl;
                 queue.pop();
             }
         } else {
@@ -239,9 +248,13 @@ void LoanManager::printAllLoans() const {
     }
 }
 
-void LoanManager::printAllReservations() const {
+void LoanManager::printAllReservations() {
     std::cout << "\n=== All Current Reservations ===" << std::endl;
     bool found = false;
+
+    // Remove expired books
+    cleanupExpiredReservations();
+
     
     for (const auto& [bookId, queue] : reservations) {
         if (!queue.empty()) {
@@ -250,12 +263,11 @@ void LoanManager::printAllReservations() const {
             std::queue<Reservation> tempQueue = queue;
             while (!tempQueue.empty()) {
                 const Reservation& reservation = tempQueue.front();
-                if (reservation.isActive) {
-                    std::cout << "  User ID: " << reservation.userId
-                             << ", Reserved: " << reservation.reservationDate
-                             << ", Expires: " << reservation.expiryDate << std::endl;
-                    found = true;
-                }
+                
+                std::cout << "  User ID: " << reservation.userId
+                            << ", Reserved: " << reservation.reservationDate
+                            << ", Expires: " << reservation.expiryDate << std::endl;
+                found = true;
                 tempQueue.pop();
             }
         }
@@ -322,6 +334,21 @@ bool LoanManager::canUserBorrowBook(const User* user, const Book* book) const {
     if (getCurrentLoansCount(user) >= user->getBorrowLimit()) return false;
     
     return true;
+}
+
+void LoanManager::cleanupExpiredReservations() {
+    std::string currentDate = getCurrentDate();
+    for (auto& [bookId, queue] : reservations) {
+        std::queue<Reservation> activeQueue;
+        while (!queue.empty()) {
+            Reservation res = queue.front();
+            if (currentDate <= res.expiryDate) {
+                activeQueue.push(res);
+            }
+            queue.pop();
+        }
+        queue = activeQueue;
+    }
 }
 
 int LoanManager::getCurrentLoansCount(const User* user) const {

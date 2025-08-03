@@ -33,7 +33,6 @@ struct Reservation {
     int bookId;
     std::string reservationDate;
     std::string expiryDate;
-    bool isActive;
     
     Reservation(int uId, int bId, const std::string& date, const std::string& expiry);
 };
@@ -79,6 +78,7 @@ private:
     bool isDateOverdue(const std::string& dueDate) const;
     bool canUserBorrowBook(const User* user, const Book* book) const;
     int getCurrentLoansCount(const User* user) const;
+    void cleanupExpiredReservations() ;
     
 public:
     LoanManager();
@@ -103,9 +103,9 @@ public:
     
     // Display and reporting methods
     void printUserLoans(int userId) const;
-    void printUserReservations(int userId) const;
+    void printUserReservations(int userId);
     void printAllLoans() const;
-    void printAllReservations() const;
+    void printAllReservations();
     void printOverdueBooks() const;
     
     // Statistics methods
