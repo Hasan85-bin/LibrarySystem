@@ -55,6 +55,9 @@ public:
     void addFine(double amount);
     void payFine(double amount);
 
+    // acces to password i know it 's not standard
+    std::string getPassword() const { return password; }
+
     virtual bool canBorrow() const = 0;
     virtual int getBorrowLimit() const = 0;
     virtual int getLoanPeriod() const = 0;

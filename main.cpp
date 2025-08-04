@@ -9,6 +9,7 @@
 #include "Core Classes/LoanManager.h"
 #include "Utils/ini/GlobalConfiguration.h"
 #include "Utils/ini/ConfigManager.h"
+#include "Utils/csv/CSVStorageManager.h"
 
 class LibrarySystem {
 private:
@@ -16,6 +17,10 @@ private:
     std::vector<std::unique_ptr<User>> users;
     std::unique_ptr<LoanManager> loanManager;
     User* currentUser;
+    std::string usersCSVFile = "users.csv";
+    std::string booksCSVFile = "books.csv";
+    std::string transactionsCSVFile = "transactions.csv";
+    std::string reservationsCSVFile = "reservations.csv";
 
     // Helper functions
     void clearScreen() {
@@ -721,15 +726,53 @@ private:
         }
     }
 
+
 public:
     LibrarySystem() : loanManager(std::make_unique<LoanManager>()), currentUser(nullptr) {
-        // Add a default librarian account
-        users.push_back(std::make_unique<Librarian>(1, "admin", "admin123"));
+        // بررسی وجود فایل و خواندن کاربران
+        CSVStorageManager::checkOrCreateCSVFile(usersCSVFile);
+        users = CSVStorageManager::loadUsers(usersCSVFile);
+        if (users.empty()) {
+            users.push_back(std::make_unique<Librarian>(1, "admin", "admin123"));
+        }
+
+        // بررسی وجود فایل و خواندن کتاب‌ها
+        CSVStorageManager::checkOrCreateCSVFile(booksCSVFile);
+        books = CSVStorageManager::loadBooks(booksCSVFile);
+
+        // بررسی وجود فایل و خواندن تراکنش‌ها
+        CSVStorageManager::checkOrCreateCSVFile(transactionsCSVFile);
+        auto loadedTransactions = CSVStorageManager::loadLoanTransactions(transactionsCSVFile);
+        for (auto& t : loadedTransactions) {
+            loanManager->getTransactions().push_back(std::move(t));
+        }
+
+        // بررسی وجود فایل و خواندن رزروها
+        CSVStorageManager::checkOrCreateCSVFile(reservationsCSVFile);
+        auto loadedReservations = CSVStorageManager::loadReservations(reservationsCSVFile);
+        // فرض بر این است که رزروها را باید به map مربوطه اضافه کنید (مثلاً بر اساس bookId)
+        for (const auto& r : loadedReservations) {
+            loanManager->getReservations()[r.bookId].push(r);
+        }
     }
 
     void run() {
         loadGlobalConfigurationFromIni();
         showMainMenu();
+        // ذخیره کاربران، کتاب‌ها، تراکنش‌ها و رزروها در انتهای برنامه
+        CSVStorageManager::saveUsers(users, usersCSVFile);
+        CSVStorageManager::saveBooks(books, booksCSVFile);
+        CSVStorageManager::saveLoanTransactions(loanManager->getTransactions(), transactionsCSVFile);
+        // جمع‌آوری همه رزروها از map و ذخیره در فایل
+        std::vector<Reservation> allReservations;
+        for (const auto& pair : loanManager->getReservations()) {
+            std::queue<Reservation> q = pair.second;
+            while (!q.empty()) {
+                allReservations.push_back(q.front());
+                q.pop();
+            }
+        }
+        CSVStorageManager::saveReservations(allReservations, reservationsCSVFile);
     }
 };
 

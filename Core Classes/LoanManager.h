@@ -81,8 +81,15 @@ private:
     void cleanupExpiredReservations(std::queue<Reservation>& queue);
     
 public:
+    // دسترسی به رزروها برای ذخیره و بارگذاری
+    const std::map<int, std::queue<Reservation>>& getReservations() const { return reservations; }
+    std::map<int, std::queue<Reservation>>& getReservations() { return reservations; }
+    void setReservations(const std::map<int, std::queue<Reservation>>& newReservations) { reservations = newReservations; }
     LoanManager();
     ~LoanManager() = default;
+
+    //  دسترسی به تراکنش‌ها برای ذخیرع در سی اس وی
+    std::vector<std::unique_ptr<LoanTransaction>>& getTransactions() { return transactions; }
     
     // Core borrowing and returning functionality
     bool borrowBook(User* user, Book* book);
