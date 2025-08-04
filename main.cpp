@@ -10,6 +10,10 @@
 #include "Utils/ini/GlobalConfiguration.h"
 #include "Utils/ini/ConfigManager.h"
 #include "Utils/csv/CSVStorageManager.h"
+#include "Utils/InputValidator.h"
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 class LibrarySystem {
 private:
@@ -17,10 +21,10 @@ private:
     std::vector<std::unique_ptr<User>> users;
     std::unique_ptr<LoanManager> loanManager;
     User* currentUser;
-    std::string usersCSVFile = "users.csv";
-    std::string booksCSVFile = "books.csv";
-    std::string transactionsCSVFile = "transactions.csv";
-    std::string reservationsCSVFile = "reservations.csv";
+    std::string usersCSVFile = "database/users.csv";
+    std::string booksCSVFile = "database/books.csv";
+    std::string transactionsCSVFile = "database/transactions.csv";
+    std::string reservationsCSVFile = "database/reservations.csv";
 
     // Helper functions
     void clearScreen() {
@@ -52,11 +56,9 @@ private:
             std::cout << "\n1. Login"
                      << "\n2. Register New User"
                      << "\n3. Exit"
-                     << "\n\nChoice: ";
+                     << "\n\n";
 
-            int choice;
-            std::cin >> choice;
-            std::cin.ignore();
+            int choice = InputValidator::getInt("Choice: ", 1, 3);
 
             switch (choice) {
                 case 1: handleLogin(); break;
@@ -79,11 +81,9 @@ private:
                      << "\n7. View My Reservations"
                      << "\n8. View My Fines"
                      << "\n9. Logout"
-                     << "\n\nChoice: ";
+                     << "\n\n";
 
-            int choice;
-            std::cin >> choice;
-            std::cin.ignore();
+            int choice = InputValidator::getInt("Choice: ", 1, 9);
 
             switch (choice) {
                 case 1: searchBooks(); break;
@@ -114,12 +114,11 @@ private:
                      << "\n8. Manage Fines"
                      << "\n9. Generate Reports"
                      << "\n10. System Settings"
-                     << "\n11. Logout"
-                     << "\n\nChoice: ";
+                     << "\n11. Register New Librarian"
+                     << "\n12. Logout"
+                     << "\n\n";
 
-            int choice;
-            std::cin >> choice;
-            std::cin.ignore();
+            int choice = InputValidator::getInt("Choice: ", 1, 12);
 
             switch (choice) {
                 case 1: addBook(); break;
@@ -132,11 +131,36 @@ private:
                 case 8: manageFines(); break;
                 case 9: generateReports(); break;
                 case 10: systemSettings(); break;
-                case 11: return;
+                case 11: handleLibrarianRegistration(); break;
+                case 12: return;
                 default: std::cout << "Invalid choice. Please try again.\n";
             }
             waitForKey();
         }
+    }
+    void handleLibrarianRegistration() {
+        std::string username, password;
+        displayHeader("Register New Librarian");
+
+        std::cout << "\nUsername: ";
+        std::getline(std::cin, username);
+
+        // Check if username already exists
+        for (const auto& user : users) {
+            if (user->getUsername() == username) {
+                std::cout << "\nUsername already exists. Please choose another.\n";
+                waitForKey();
+                return;
+            }
+        }
+
+        std::cout << "Password: ";
+        std::getline(std::cin, password);
+
+        int newId = users.size() + 1;
+        users.push_back(std::make_unique<Librarian>(newId, username, password));
+        std::cout << "\nLibrarian registered successfully!\n";
+        waitForKey();
     }
 
     // Authentication functions
@@ -729,6 +753,13 @@ private:
 
 public:
     LibrarySystem() : loanManager(std::make_unique<LoanManager>()), currentUser(nullptr) {
+        // ساخت پوشه database اگر وجود نداشت
+        #ifdef _WIN32
+        _mkdir("database");
+        #else
+        mkdir("database", 0777);
+        #endif
+
         // بررسی وجود فایل و خواندن کاربران
         CSVStorageManager::checkOrCreateCSVFile(usersCSVFile);
         users = CSVStorageManager::loadUsers(usersCSVFile);
